@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const _kPrefsKey = 'guide_config_v1';
 
-// 方便 UI 做選單用（可選自己要不要用）
 const List<String> kSegModelOptions = [
   'Cross_Road_640.tflite',
   'Cross_Road_960.tflite',
@@ -16,31 +15,26 @@ const List<String> kLightModelOptions = [
 ];
 
 class GuideConfig extends ChangeNotifier {
-  // —— 模型檔名 —— //
   String modelSeg = 'Cross_Road_960.tflite';
   String modelLight = 'pedestrian-signal-lights_960.tflite';
 
-  // —— 是否先做斑馬線輔助 —— //
-  bool useCrosswalkAssist = true; // 關閉則直接跳紅綠燈
+  bool useCrosswalkAssist = true;
 
-  // —— 斑馬線導引 —— //
-  double deadband = 15.0;     // 左正右負，超過才提示往左／往右
-  bool flipLR = false;        // 左右反轉
-  double emaAlpha = 0.2;      // EMA 平滑
-  int sayCooldownMs = 1500;   // 語音節流（毫秒）
+  bool flipLR = false;
+  double emaAlpha = 0.2;
+  int sayCooldownMs = 1500;
 
-  double facingBand = 4.0;    // 視為已對準的更窄容許角（度）
-  int requiredStable = 15;    // 連續穩定幀門檻
+  double facingBand = 4.0;
+  int requiredStable = 15;
 
-  double rowBandTop = 0.25;   // 只掃中段：上 25% 不掃
-  double rowBandBot = 0.85;   // 下 15% 不掃
-  int rowStep = 2;            // 行取樣步長
-  double minDualRowsRatio = 0.30; // 同時抓到左右兩邊的列比例下限
-  double minSpanRatio = 0.20;     // 橫向跨度中位數佔寬度比例下限
+  double rowBandTop = 0.25;
+  double rowBandBot = 0.85;
+  int rowStep = 2;
+  double minDualRowsRatio = 0.30;
+  double minSpanRatio = 0.20;
 
-  // —— 紅綠燈偵測（可調）—— //
-  double tlConfThreshold = 0.50; // 置信門檻
-  int tlVotingSeconds = 3;       // 投票時間（秒）
+  double tlConfThreshold = 0.50;
+  int tlVotingSeconds = 3;
   String tlCameraResolution = '1080p';
   int tlMaxFPS = 60;
 
@@ -48,11 +42,10 @@ class GuideConfig extends ChangeNotifier {
   double tlZoomMax = 4.0;
   double tlZoomReset = 1.0;
   double tlZoomStep = 0.2;
-  int tlZoomIntervalMs = 200;    // 縮放巡檢週期（毫秒）
+  int tlZoomIntervalMs = 200;
 
-  bool tlSpeakOnEnter = true;    // 進頁後提示一次
+  bool tlSpeakOnEnter = true;
 
-  // ===== 持久化：載入／儲存 =====
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_kPrefsKey);
@@ -60,9 +53,7 @@ class GuideConfig extends ChangeNotifier {
     try {
       final map = jsonDecode(raw) as Map<String, dynamic>;
       _fromMap(map);
-    } catch (_) {
-      // ignore 損壞資料
-    }
+    } catch (_) {}
   }
 
   Future<void> _save() async {
@@ -74,7 +65,6 @@ class GuideConfig extends ChangeNotifier {
     'modelSeg': modelSeg,
     'modelLight': modelLight,
     'useCrosswalkAssist': useCrosswalkAssist,
-    'deadband': deadband,
     'flipLR': flipLR,
     'emaAlpha': emaAlpha,
     'sayCooldownMs': sayCooldownMs,
@@ -97,7 +87,6 @@ class GuideConfig extends ChangeNotifier {
     'tlSpeakOnEnter': tlSpeakOnEnter,
   };
 
-  // 安全轉型工具
   double _asDouble(dynamic v, double def) {
     if (v is num) return v.toDouble();
     if (v is String) return double.tryParse(v) ?? def;
@@ -122,7 +111,6 @@ class GuideConfig extends ChangeNotifier {
 
     useCrosswalkAssist = _asBool(m['useCrosswalkAssist'], useCrosswalkAssist);
 
-    deadband = _asDouble(m['deadband'], deadband);
     flipLR = _asBool(m['flipLR'], flipLR);
     emaAlpha = _asDouble(m['emaAlpha'], emaAlpha);
     sayCooldownMs = _asInt(m['sayCooldownMs'], sayCooldownMs);
@@ -151,16 +139,12 @@ class GuideConfig extends ChangeNotifier {
     tlSpeakOnEnter = _asBool(m['tlSpeakOnEnter'], tlSpeakOnEnter);
   }
 
-  // ===== setters（每次改動都自動存檔）=====
-
-  // 模型切換（斑馬線）
   void setModelSeg(String v) {
     modelSeg = v;
     notifyListeners();
     _save();
   }
 
-  // 模型切換（紅綠燈）
   void setModelLight(String v) {
     modelLight = v;
     notifyListeners();
@@ -175,12 +159,6 @@ class GuideConfig extends ChangeNotifier {
 
   void setFlip(bool v) {
     flipLR = v;
-    notifyListeners();
-    _save();
-  }
-
-  void setDeadband(double v) {
-    deadband = v;
     notifyListeners();
     _save();
   }
@@ -299,20 +277,17 @@ class GuideConfig extends ChangeNotifier {
     _save();
   }
 
-  // 一鍵套用導引預設
   void applyGuidePreset(String preset) {
     switch (preset) {
-      case '敏感': // 反應快、易跳轉
-        setDeadband(10);
-        setFacingBand(3);
+      case '敏感':
+        setFacingBand(10);
         setRequiredStable(10);
         setSayCooldownMs(1000);
         setEmaAlpha(0.35);
         setMinDualRowsRatio(0.25);
         setMinSpanRatio(0.15);
         break;
-      case '保守': // 反應慢、穩定
-        setDeadband(20);
+      case '保守':
         setFacingBand(5);
         setRequiredStable(20);
         setSayCooldownMs(1800);
@@ -320,9 +295,8 @@ class GuideConfig extends ChangeNotifier {
         setMinDualRowsRatio(0.35);
         setMinSpanRatio(0.25);
         break;
-      default: // 標準
-        setDeadband(15);
-        setFacingBand(4);
+      default:
+        setFacingBand(8);
         setRequiredStable(15);
         setSayCooldownMs(1500);
         setEmaAlpha(0.2);
@@ -331,36 +305,32 @@ class GuideConfig extends ChangeNotifier {
     }
   }
 
-  // 一鍵套用紅綠燈預設
   void applyTrafficPreset(String preset) {
     switch (preset) {
-      case '快速判斷': // 速度優先
+      case '快速判斷':
         setTlVotingSeconds(2);
-        setTlConf(0.45);
+        setTlConf(0.5);
         setTlMaxFps(60);
         setTlZoomStep(0.25);
         break;
-      case '穩健判斷': // 準確優先
+      case '穩健判斷':
         setTlVotingSeconds(4);
-        setTlConf(0.60);
-        setTlMaxFps(45);
+        setTlConf(0.8);
         setTlZoomStep(0.15);
         break;
-      default: // 標準
+      default:
         setTlVotingSeconds(3);
-        setTlConf(0.50);
+        setTlConf(0.7);
         setTlMaxFps(60);
         setTlZoomStep(0.20);
     }
   }
 
-  // 重設所有設定為出廠值
   Future<void> resetToDefaults() async {
     modelSeg = 'Cross_Road_960.tflite';
     modelLight = 'pedestrian-signal-lights_960.tflite';
     useCrosswalkAssist = true;
 
-    deadband = 15.0;
     flipLR = false;
     emaAlpha = 0.2;
     sayCooldownMs = 1500;

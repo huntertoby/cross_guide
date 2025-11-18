@@ -5,7 +5,7 @@ Future<T?> showCenteredModal<T>(
     BuildContext context, {
       required Widget child,
       double maxWidth = 560,
-      double maxHeightFactor = 0.8, // 最高佔螢幕 80%
+      double maxHeightFactor = 0.8,
       bool dismissible = true,
     }) {
   final theme = Theme.of(context);
@@ -21,7 +21,6 @@ Future<T?> showCenteredModal<T>(
         child: ConstrainedBox(
           constraints: BoxConstraints(
             maxWidth: maxWidth,
-            // 高度用螢幕比例限制，內層用 ListView 可捲動
             maxHeight: MediaQuery.of(ctx).size.height * maxHeightFactor,
           ),
           child: ClipRRect(
@@ -29,7 +28,6 @@ Future<T?> showCenteredModal<T>(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 假把手（視覺一致）
                 const SizedBox(height: 10),
                 Container(
                   width: 44, height: 5,

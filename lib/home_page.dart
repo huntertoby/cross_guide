@@ -21,7 +21,6 @@ class _HomePageState extends State<HomePage>
   @override
   void initState() {
     super.initState();
-    // 首次啟動顯示歡迎面板
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowWelcome());
   }
 
@@ -36,7 +35,6 @@ class _HomePageState extends State<HomePage>
     final seen = prefs.getBool('onboarded_v1') ?? false;
     if (!seen) {
       final dontShow = await _showWelcomeSheet(context);
-      // 若使用者沒取消打勾，也當作已看過
       if (dontShow) {
         await prefs.setBool('onboarded_v1', true);
       }
@@ -49,14 +47,11 @@ class _HomePageState extends State<HomePage>
         MaterialPageRoute(builder: (_) => const CrosswalkGuidePage()),
       );
     } else {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => TrafficLightPage(
-            modelPath: guideConfig.modelLight,
-            confThreshold: guideConfig.tlConfThreshold,
-          ),
-        ),
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const TrafficLightPage()),
       );
+
     }
   }
 
@@ -112,15 +107,14 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  // ===== 首次歡迎面板 =====
   Future<bool> _showWelcomeSheet(BuildContext context) async {
-    bool dontShowAgain = true; // 預設勾選
+    bool dontShowAgain = true;
     final color = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
     final result = await showDialog<bool>(
       context: context,
-      barrierDismissible: true, // 點外面可關閉
+      barrierDismissible: true,
       builder: (ctx) {
         return Dialog(
           backgroundColor: color.surface,
@@ -130,7 +124,7 @@ class _HomePageState extends State<HomePage>
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: 560,
-              maxHeight: MediaQuery.of(ctx).size.height * 0.85, // 最高佔 85% 高
+              maxHeight: MediaQuery.of(ctx).size.height * 0.85,
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(24),
@@ -140,7 +134,6 @@ class _HomePageState extends State<HomePage>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const SizedBox(height: 10),
-                      // 視覺把手
                       Container(
                         width: 44, height: 5,
                         decoration: BoxDecoration(
@@ -167,7 +160,7 @@ class _HomePageState extends State<HomePage>
 
                               Text('使用介面介紹',
                                   style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w500)),
-                              // 使用步驟
+
                               ListTile(
                                 leading: const Icon(Icons.home_rounded),
                                 title: const Text('首頁'),
@@ -197,7 +190,6 @@ class _HomePageState extends State<HomePage>
                               const Divider(),
                               const SizedBox(height: 8),
 
-                              // 注意事項
                               Text('注意事項',
                                   style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                               const SizedBox(height: 8),
@@ -227,7 +219,6 @@ class _HomePageState extends State<HomePage>
                           ),
                         ),
                       ),
-                      // 底部主按鈕
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                         child: SizedBox(
@@ -252,8 +243,6 @@ class _HomePageState extends State<HomePage>
     return result ?? false;
   }
 
-
-  // ===== 使用教學（可隨時打開） =====
   void _showTutorial(BuildContext context) {
     final color = Theme.of(context).colorScheme;
     showModalBottomSheet(
@@ -333,14 +322,14 @@ class _HomeCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 主按鈕
+
             _BigActionButton(
               icon: Icons.play_arrow_rounded,
               label: '開始',
               onPressed: onStart,
             ),
             const SizedBox(height: 12),
-            // 次按鈕群
+
             Row(
               children: [
                 Expanded(

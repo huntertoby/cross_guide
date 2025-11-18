@@ -13,7 +13,6 @@ class _OptionsPageState extends State<OptionsPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 處理「目前設定值不在選項裡」的情況
     final segModelValue = kSegModelOptions.contains(guideConfig.modelSeg)
         ? guideConfig.modelSeg
         : kSegModelOptions.first;
@@ -26,7 +25,6 @@ class _OptionsPageState extends State<OptionsPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
         children: [
-          // ===== 總開關 =====
           Card(
             child: SwitchListTile(
               title: const Text('斑馬線輔助'),
@@ -39,7 +37,6 @@ class _OptionsPageState extends State<OptionsPage> {
 
           const SizedBox(height: 6),
 
-          // ===== 一般 =====
           ExpansionTile(
             initiallyExpanded: true,
             title: const Text('一般設定'),
@@ -50,43 +47,26 @@ class _OptionsPageState extends State<OptionsPage> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
-              // 斑馬線模型
+
               _dropdownTile(
                 title: '斑馬線模型',
                 value: segModelValue,
                 items: kSegModelOptions,
                 onChanged: (v) =>
                     setState(() => guideConfig.setModelSeg(v)),
+                labelBuilder: _segModelLabel,
               ),
-              // 紅綠燈模型
+
               _dropdownTile(
                 title: '紅綠燈模型',
                 value: lightModelValue,
                 items: kLightModelOptions,
                 onChanged: (v) =>
                     setState(() => guideConfig.setModelLight(v)),
+                labelBuilder: _lightModelLabel,
               ),
 
               const Divider(),
-
-              _dropdownTile(
-                title: '相機解析度（紅綠燈）',
-                value: _cameraChoices.contains(guideConfig.tlCameraResolution)
-                    ? guideConfig.tlCameraResolution
-                    : _cameraChoices.first,
-                items: _cameraChoices,
-                onChanged: (v) =>
-                    setState(() => guideConfig.setTlCameraResolution(v)),
-              ),
-              _intStepper(
-                label: '最大 FPS（紅綠燈）',
-                value: guideConfig.tlMaxFPS,
-                min: 15,
-                max: 120,
-                step: 5,
-                onChanged: (v) =>
-                    setState(() => guideConfig.setTlMaxFps(v)),
-              ),
               SwitchListTile(
                 title: const Text('進入紅綠燈頁時語音提示'),
                 value: guideConfig.tlSpeakOnEnter,
@@ -96,12 +76,12 @@ class _OptionsPageState extends State<OptionsPage> {
             ],
           ),
 
-          // ===== 斑馬線導引 =====
+
           ExpansionTile(
             title: const Text('斑馬線導引'),
             childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             children: [
-              // 一鍵預設
+
               _presetChips(
                 label: '一鍵套用',
                 values: const ['保守', '標準', '敏感'],
@@ -113,16 +93,6 @@ class _OptionsPageState extends State<OptionsPage> {
                 subtitle: const Text('畫面左右顛倒時請開啟'),
                 value: guideConfig.flipLR,
                 onChanged: (v) => setState(() => guideConfig.setFlip(v)),
-              ),
-              _slider(
-                label: '死區（deadband）',
-                help: '超過這個角度才提醒左右移動',
-                value: guideConfig.deadband,
-                min: 5,
-                max: 30,
-                divisions: 25,
-                onChanged: (v) =>
-                    setState(() => guideConfig.setDeadband(v)),
               ),
               _slider(
                 label: '對準帶（facingBand）',
@@ -144,7 +114,7 @@ class _OptionsPageState extends State<OptionsPage> {
                     setState(() => guideConfig.setRequiredStable(v)),
               ),
               const Divider(),
-              const Text('畫面取樣區間',
+              const Text('畫面品質不好辨識條件',
                   style: TextStyle(fontWeight: FontWeight.bold)),
               _slider(
                 label: '上方不掃比例（rowBandTop）',
@@ -220,7 +190,7 @@ class _OptionsPageState extends State<OptionsPage> {
             ],
           ),
 
-          // ===== 紅綠燈偵測 =====
+
           ExpansionTile(
             title: const Text('紅綠燈偵測'),
             childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -231,6 +201,25 @@ class _OptionsPageState extends State<OptionsPage> {
                 onTap: (p) =>
                     setState(() => guideConfig.applyTrafficPreset(p)),
               ),
+              _dropdownTile(
+                title: '相機解析度（紅綠燈）',
+                value: _cameraChoices.contains(guideConfig.tlCameraResolution)
+                    ? guideConfig.tlCameraResolution
+                    : _cameraChoices.first,
+                items: _cameraChoices,
+                onChanged: (v) =>
+                    setState(() => guideConfig.setTlCameraResolution(v)),
+              ),
+              _intStepper(
+                label: '最大 FPS（紅綠燈）',
+                value: guideConfig.tlMaxFPS,
+                min: 15,
+                max: 120,
+                step: 5,
+                onChanged: (v) =>
+                    setState(() => guideConfig.setTlMaxFps(v)),
+              ),
+
               _slider(
                 label: '信心門檻',
                 help: '低於此分數就忽略',
@@ -307,7 +296,7 @@ class _OptionsPageState extends State<OptionsPage> {
         ],
       ),
 
-      // ===== 置底工具列 =====
+
       bottomSheet: SafeArea(
         child: Container(
           color: Theme.of(context).colorScheme.surface,
@@ -344,7 +333,29 @@ class _OptionsPageState extends State<OptionsPage> {
     );
   }
 
-  // ===== 小元件們 =====
+  String _segModelLabel(String file) {
+    switch (file) {
+      case 'Cross_Road_960.tflite':
+        return '高性能（960×960）';
+      case 'Cross_Road_640.tflite':
+        return '中性能（640×640）';
+      default:
+        return file;
+    }
+  }
+
+  String _lightModelLabel(String file) {
+    switch (file) {
+      case 'pedestrian-signal-lights_960.tflite':
+        return '高性能（960×960）';
+      case 'pedestrian-signal-lights_640.tflite':
+        return '中性能（640×640）';
+      default:
+        return file;
+    }
+  }
+
+
   Widget _presetChips({
     required String label,
     required List<String> values,
@@ -375,7 +386,10 @@ class _OptionsPageState extends State<OptionsPage> {
     required String value,
     required List<String> items,
     required ValueChanged<String> onChanged,
+    String Function(String)? labelBuilder,
   }) {
+    final lb = labelBuilder ?? (s) => s;
+
     return ListTile(
       contentPadding: EdgeInsets.zero,
       title: Text(title),
@@ -383,7 +397,7 @@ class _OptionsPageState extends State<OptionsPage> {
         value: value,
         items: items
             .map((e) =>
-            DropdownMenuItem(value: e, child: Text(e)))
+            DropdownMenuItem(value: e, child: Text(lb(e))))
             .toList(),
         onChanged: (v) {
           if (v != null) onChanged(v);
@@ -391,6 +405,7 @@ class _OptionsPageState extends State<OptionsPage> {
       ),
     );
   }
+
 
   Widget _slider({
     required String label,
@@ -454,15 +469,13 @@ class _OptionsPageState extends State<OptionsPage> {
             ),
             IconButton(
               icon: const Icon(Icons.remove),
-              onPressed: value - step >= min
-                  ? () => onChanged(value - step)
-                  : null,
+              tooltip: '減少 $label',
+              onPressed: value - step >= min ? () => onChanged(value - step) : null,
             ),
             IconButton(
               icon: const Icon(Icons.add),
-              onPressed: value + step <= max
-                  ? () => onChanged(value + step)
-                  : null,
+              tooltip: '增加 $label',
+              onPressed: value + step <= max ? () => onChanged(value + step) : null,
             ),
           ],
         ),

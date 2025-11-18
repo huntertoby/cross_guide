@@ -4,8 +4,6 @@ import 'home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // 先載入偏好設定
-  await guideConfig.load();
   runApp(const MyApp());
 }
 
