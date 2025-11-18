@@ -126,7 +126,7 @@ class _CrosswalkGuidePageState extends State<CrosswalkGuidePage> {
 
       if (!mounted) return;
       setState(() {
-        final _ = tip; // 目前不顯示文字，只為了保留 setState 結構需要變數
+        final _ = tip;
       });
       return;
     }
