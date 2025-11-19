@@ -79,7 +79,13 @@ class _CrosswalkGuidePageState extends State<CrosswalkGuidePage> {
       return;
     }
 
-    final cv.Mat m = _toMaskMat(mask);
+    final cv.Mat rawMask = _toMaskMat(mask);
+    if (rawMask.isEmpty) {
+      _stableCount = 0;
+      return;
+    }
+
+    final cv.Mat m = _keepLargestComponent(rawMask);
     if (m.isEmpty) {
       _stableCount = 0;
       return;
@@ -96,6 +102,7 @@ class _CrosswalkGuidePageState extends State<CrosswalkGuidePage> {
         (ep.medianSpan < (guideConfig.minSpanRatio * _lastFrameSize.width));
 
     if (cutOrWeak) {
+
       final now = DateTime.now().millisecondsSinceEpoch;
       final double centerX = _lastFrameSize.width / 2.0;
       final double dx = centerX - ep.cx;
@@ -207,6 +214,7 @@ class _CrosswalkGuidePageState extends State<CrosswalkGuidePage> {
   }
 
   cv.Mat _toMaskMat(dynamic mask) {
+    // YOLO segmentation 常見輸出：List<List<num>> 或 Mat
     if (mask is List && mask.isNotEmpty && mask.first is List) {
       final int h = mask.length;
       final int w = (mask.first as List).length;
@@ -221,6 +229,7 @@ class _CrosswalkGuidePageState extends State<CrosswalkGuidePage> {
       }
       return cv.Mat.fromList(h, w, cv.MatType.CV_8UC1, list);
     }
+
     if (mask is cv.Mat) {
       if (mask.type == cv.MatType.CV_8UC1) {
         final (double _, cv.Mat bin0) =
@@ -232,7 +241,81 @@ class _CrosswalkGuidePageState extends State<CrosswalkGuidePage> {
       cv.threshold(gray, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
       return bin;
     }
+
     return cv.Mat.empty();
+  }
+
+  /// 只保留二值影像中的「最大連通區塊」，其他全部設為 0。
+  cv.Mat _keepLargestComponent(cv.Mat bin) {
+    final int W = bin.cols, H = bin.rows;
+    if (W == 0 || H == 0) {
+      return cv.Mat.empty();
+    }
+
+    final data = bin.data; // Uint8List, 0 or 255
+    final labels = List<int>.filled(W * H, 0);
+    final stack = <int>[];
+
+    int curLabel = 0;
+    int bestLabel = 0;
+    int bestArea = 0;
+
+    int idxOf(int x, int y) => y * W + x;
+
+    const neighborDx = [1, -1, 0, 0];
+    const neighborDy = [0, 0, 1, -1];
+
+    for (int y = 0; y < H; y++) {
+      for (int x = 0; x < W; x++) {
+        final int idx = idxOf(x, y);
+        // 只從「有前景、尚未標記」的點開始 flood fill
+        if (data[idx] == 0 || labels[idx] != 0) continue;
+
+        curLabel++;
+        int area = 0;
+        stack.clear();
+        stack.add(idx);
+        labels[idx] = curLabel;
+
+        while (stack.isNotEmpty) {
+          final int p = stack.removeLast();
+          area++;
+
+          final int px = p % W;
+          final int py = p ~/ W;
+
+          for (int k = 0; k < 4; k++) {
+            final int nx = px + neighborDx[k];
+            final int ny = py + neighborDy[k];
+            if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+
+            final int nIdx = idxOf(nx, ny);
+            if (data[nIdx] == 0 || labels[nIdx] != 0) continue;
+
+            labels[nIdx] = curLabel;
+            stack.add(nIdx);
+          }
+        }
+
+        if (area > bestArea) {
+          bestArea = area;
+          bestLabel = curLabel;
+        }
+      }
+    }
+
+    if (bestLabel == 0 || bestArea == 0) {
+      return cv.Mat.empty();
+    }
+
+    final out = List<int>.filled(W * H, 0);
+    for (int i = 0; i < out.length; i++) {
+      if (labels[i] == bestLabel) {
+        out[i] = 255;
+      }
+    }
+
+    return cv.Mat.fromList(H, W, cv.MatType.CV_8UC1, out);
   }
 
   _EdgePoints _extractEdgePointsFromMask(cv.Mat bin) {

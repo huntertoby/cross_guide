@@ -1,6 +1,5 @@
 import 'package:flutter_tts/flutter_tts.dart';
 
-/// 簡單好用的 TTS 單例服務
 class TTS {
   TTS._();
   static final TTS i = TTS._();
@@ -11,7 +10,6 @@ class TTS {
   String _lastSpoken = '';
   DateTime _lastAt = DateTime.fromMillisecondsSinceEpoch(0);
 
-  /// 初始化（建議 App 啟動或首次使用前呼叫一次）
   Future<void> init({
     String language = 'zh-TW',
     double rate = 0.5,     // 0.0 ~ 1.0
@@ -35,7 +33,6 @@ class TTS {
     _inited = true;
   }
 
-  /// 直接說話（預設會中斷上一句）
   Future<void> speak(String text, {bool interrupt = true}) async {
     if (!_inited) await init();
     if (interrupt) {
@@ -44,7 +41,6 @@ class TTS {
     await _tts.speak(text);
   }
 
-  /// 若內容有變且距離上次說話超過 minGap 才念，避免洗版
   Future<void> speakIfChanged(
       String text, {
         Duration minGap = const Duration(seconds: 2),
@@ -62,12 +58,10 @@ class TTS {
     try { await _tts.stop(); } catch (_) {}
   }
 
-  /// 可動態調整參數
   Future<void> setLanguage(String lang) async => _tts.setLanguage(lang);
   Future<void> setRate(double rate) async => _tts.setSpeechRate(rate);
   Future<void> setPitch(double pitch) async => _tts.setPitch(pitch);
 
-  /// 將紅綠燈類別字串轉語音稿（可依你的類別自訂）
   String speechForTrafficLabel(String? label) {
     final l = (label ?? '').toLowerCase();
     if (l.contains('green'))  return '綠燈，請通行';

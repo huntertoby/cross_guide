@@ -30,8 +30,8 @@ class GuideConfig extends ChangeNotifier {
   double rowBandTop = 0.25;
   double rowBandBot = 0.85;
   int rowStep = 2;
-  double minDualRowsRatio = 0.30;
-  double minSpanRatio = 0.20;
+  double minDualRowsRatio = 0.20;
+  double minSpanRatio = 0.15;
 
   double tlConfThreshold = 0.50;
   int tlVotingSeconds = 3;
